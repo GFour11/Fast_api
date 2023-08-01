@@ -1,3 +1,4 @@
+from fastapi import status
 from datetime import date, timedelta
 from sqlalchemy import or_
 from src.database.models import Contact
@@ -45,12 +46,9 @@ async def upcoming_birthday(db: Session):
     result_list =[]
     contacts = db.query(Contact).order_by('birthday').all()
     current_date = date.today()
-    delta = timedelta(days=7)
-    next_week = current_date + delta
+    end_of_week = current_date + timedelta(days=6 - current_date.weekday())
     for contact in contacts:
-        bd = contact.birthday
-        res = next_week - bd
-        if res.days<=7:
+        if contact.birthday.month == current_date.month and contact.birthday.day >= current_date.day and contact.birthday <= end_of_week:
             result_list.append(contact)
     return result_list
 
