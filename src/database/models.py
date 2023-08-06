@@ -1,12 +1,6 @@
-from sqlalchemy import Column, String, Date, Integer
+from sqlalchemy import Column, String, Date, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
-""" Ім'я
-Прізвище
-Електронна адреса
-Номер телефону
-День народження
-Додаткові дані (необов'язково)"""
 
 Base = declarative_base()
 
@@ -18,4 +12,12 @@ class Contact(Base):
     email = Column(String(100))
     birthday = Column(Date)
     data = Column(String(), default= None)
+    user = Column(ForeignKey("Users.id", ondelete="CASCADE"), nullable=True, default=None)
 
+class User(Base):
+    __tablename__ = 'Users'
+    id = Column(Integer, primary_key=True)
+    email = Column(String(50), nullable= False, unique= True)
+    password = Column(String(), nullable= False)
+    access_token = Column(String(300), default=None)
+    refresh_token = Column(String(300), default=None)

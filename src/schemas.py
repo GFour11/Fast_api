@@ -13,7 +13,16 @@ class ContactResponse(ContactModel):
     surname: str
     email: str
     birthday: date
-    data: str | None
+    data: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class UserModel(BaseModel):
+    email : str
+    password: str
+
+class TokenModel(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
