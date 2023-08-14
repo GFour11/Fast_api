@@ -68,6 +68,9 @@ async def signup(body, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return status.HTTP_201_CREATED, new_user
+    return new_user
 
-
+async def confirmed_email(user: User,db: Session):
+    user = db.query(Contact).filter_by(user=user.id).first()
+    user.confirmed = True
+    db.commit()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, Integer, ForeignKey
+from sqlalchemy import Column, String, Date, Integer, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -21,3 +21,6 @@ class User(Base):
     password = Column(String(), nullable= False)
     access_token = Column(String(300), default=None)
     refresh_token = Column(String(300), default=None)
+    confirmed = Column(Boolean(), default=False)
+    def __str__(self):
+        return self.email

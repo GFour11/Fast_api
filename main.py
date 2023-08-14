@@ -20,3 +20,8 @@ def unexpected_exception_handler(request: Request, exc: Exception):
 #     if not result:
 #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
 #     return result
+
+
+
+
+# itxixitxit@gmail.com

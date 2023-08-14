@@ -102,3 +102,24 @@ async def decode_refresh_token(self, refresh_token: str):
 async def update_token(user: User, token: str | None, db: Session) -> None:
     user.refresh_token = token
     db.commit()
+
+async def create_email_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=7)
+    to_encode.update({"iat": datetime.utcnow(), "exp": expire})
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    print(token)
+    return token
+
+
+async def get_email_from_token(token: str):
+  try:
+      payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+      print(payload)
+      email = payload["sub"]
+      print(email)
+      return email
+  except JWTError as e:
+      print(e)
+      raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                          detail="Invalid token for email verification")
