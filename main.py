@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, status, Request
 from fastapi_limiter import FastAPILimiter
 from starlette.responses import JSONResponse
@@ -35,7 +37,7 @@ def unexpected_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup():
-    r = await redis.Redis(host='redis-17572.c261.us-east-1-4.ec2.cloud.redislabs.com',
-                          port=17572, password='mGoYHBz4VlEKjWKTRNl74suWACOaOzmX',
+    r = await redis.Redis(host=os.environ.get('REDIS_HOST'),
+                          port=os.environ.get('REDIS_PORT'), password=os.environ.get('REDIS_PASSWORD'),
                           db=0, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
