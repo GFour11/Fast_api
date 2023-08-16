@@ -1,3 +1,4 @@
+import os
 from _datetime import datetime
 from datetime import timedelta
 from typing import Optional
@@ -7,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from src.database.db import get_db
 from src.database.models import User
@@ -21,8 +23,9 @@ class Hash:
     def get_password_hash(self, password: str):
         return self.pwd_context.hash(password)
 
-SECRET_KEY = 'fast_api'
-ALGORITHM = 'HS256'
+load_dotenv()
+SECRET_KEY = os.environ.get('SECRET_KEY')
+ALGORITHM = os.environ.get('ALGORITHM')
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/utils/login")
 

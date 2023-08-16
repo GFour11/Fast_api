@@ -51,7 +51,7 @@ async def delete_contact(name,current_user: User = Depends(auth.get_current_user
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
     return 'Delited'
 
-@router.post('/new_contatact', response_model=ContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=1, seconds=5))])
+@router.post('/new_contatact', response_model=ContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=2, seconds=60))])
 async def create_contact(body : ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     result = await src.create_contact(body,current_user, db)
     return result

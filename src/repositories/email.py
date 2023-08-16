@@ -1,23 +1,28 @@
+import os
 from pathlib import Path
 
 from fastapi_mail.errors import ConnectionErrors
 from pydantic import BaseModel, EmailStr
 from fastapi_mail import ConnectionConfig, MessageType, MessageSchema, FastMail
+from dotenv import load_dotenv
 
 from src.repositories import auth as auth
 
-HOST = 'localhost'
+
+load_dotenv()
+
+HOST = os.environ.get('HOST')
 
 class EmailSchema(BaseModel):
     email: EmailStr
 
 
 conf = ConnectionConfig(
-    MAIL_USERNAME="gfour@meta.ua",
-    MAIL_PASSWORD="Arcobaleno1",
-    MAIL_FROM="gfour@meta.ua",
-    MAIL_PORT=465,
-    MAIL_SERVER="smtp.meta.ua",
+    MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
+    MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
+    MAIL_FROM=os.environ.get('MAIL_FROM'),
+    MAIL_PORT=os.environ.get('MAIL_PORT'),
+    MAIL_SERVER=os.environ.get('MAIL_SERVER'),
     MAIL_FROM_NAME="Example email",
     MAIL_STARTTLS=False,
     MAIL_SSL_TLS=True,
