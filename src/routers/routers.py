@@ -1,21 +1,28 @@
-from fastapi import APIRouter, Depends,  HTTPException, status, BackgroundTasks, Request
+import cloudinary
+import cloudinary.uploader
+from fastapi import APIRouter, Depends,  HTTPException, status, BackgroundTasks, Request, UploadFile, File
 from fastapi.security import  HTTPBearer, OAuth2PasswordRequestForm
-from fastapi_mail import MessageSchema, MessageType, FastMail
 from sqlalchemy.orm import Session
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+
 
 from src.database.db import get_db
 from src.database.models import User
 from src.repositories import auth as auth
 from src.repositories.auth import get_user_by_email
-from src.repositories.email import EmailSchema, conf, send_email
+from src.repositories.email import send_email
 from src.repositories.operations import get_one_contact, del_contact, confirmed_email
 import src.repositories.operations as src
-from src.schemas import ContactResponse, UserModel, TokenModel, RequestEmail
+from src.schemas import ContactResponse, UserModel, TokenModel, RequestEmail, UserDb
 
 
 router = APIRouter(prefix='/contacts', tags=['contacts'])
 utils = APIRouter(prefix='/utils', tags=['utils'])
+users = APIRouter(prefix='/users', tags=['users'])
 security = HTTPBearer()
+
+
 @router.get('/get_contatact', response_model=ContactResponse)
 async def get_contact(name, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     result = await get_one_contact(name, current_user, db)
@@ -24,13 +31,13 @@ async def get_contact(name, current_user: User = Depends(auth.get_current_user),
     return result
 
 
-@router.get('/get_all_contatact')
+@router.get('/get_all_contatact', dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def get_all_contact(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     result = await src.get_all_contacts(current_user,db)
     return result
 
 
-@router.put('/update_contatact', status_code=status.HTTP_201_CREATED)
+@router.put('/update_contatact', status_code=status.HTTP_201_CREATED,  dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def update_contact(name, body : ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     result = await src.update_contact(name, body, current_user, db)
     if not result:
@@ -44,10 +51,11 @@ async def delete_contact(name,current_user: User = Depends(auth.get_current_user
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
     return 'Delited'
 
-@router.post('/new_contatact', response_model=ContactResponse, status_code=status.HTTP_201_CREATED)
+@router.post('/new_contatact', response_model=ContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def create_contact(body : ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     result = await src.create_contact(body,current_user, db)
     return result
+
 
 @utils.get('/upcoming_birthday')
 async def upcoming_birthday(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
@@ -60,7 +68,7 @@ async def search(param, current_user: User = Depends(auth.get_current_user), db:
 
 @utils.post('/signup', status_code=status.HTTP_201_CREATED)
 async def signup(body : UserModel ,background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
-    new_user = await src.signup(body, db)
+    await src.signup(body, db)
     background_tasks.add_task(send_email, body.email, request.base_url)
     return 'Check your email'
 @utils.post("/login", response_model=TokenModel)
@@ -80,7 +88,7 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 @utils.get('/confirmed_email/{token}')
-async def confirmed_email(token: str, db: Session = Depends(get_db)):
+async def _confirmed_email(token: str, db: Session = Depends(get_db)):
     email = await auth.get_email_from_token(token)
     user = await auth.get_user_by_email(email, db)
     if user is None:
@@ -100,3 +108,23 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
     if user:
         background_tasks.add_task(send_email, user.email, user.username, request.base_url)
     return {"message": "Check your email for confirmation."}
+
+@users.patch('/avatar', response_model=UserDb)
+async def update_avatar_user(file: UploadFile = File(), current_user: User = Depends(auth.get_current_user),
+                             db: Session = Depends(get_db)):
+    cloudinary.config(
+        cloud_name="dsjusqa4p",
+        api_key="599877185773136",
+        api_secret="VFeBRMltUi1d8Jz_aCwOGLF4b8k",
+        secure=True
+    )
+
+    r = cloudinary.uploader.upload(file.file, public_id=f'ContactApp/{current_user.email}', overwrite=True)
+    src_url = cloudinary.CloudinaryImage(f'ContactApp/{current_user.email}')\
+                        .build_url(width=250, height=250, crop='fill', version=r.get('version'))
+    user = await src.update_avatar(current_user.email, src_url, db)
+    return user
+
+@users.get("/me/", response_model=UserDb)
+async def read_users_me(current_user: User = Depends(auth.get_current_user)):
+    return current_user

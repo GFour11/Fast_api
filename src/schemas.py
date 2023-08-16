@@ -30,3 +30,11 @@ class TokenModel(BaseModel):
 
 class RequestEmail(BaseModel):
     email : EmailStr
+
+class UserDb(BaseModel):
+    id: int
+    email: str
+    avatar: str
+
+    class Config:
+        orm_mode = True

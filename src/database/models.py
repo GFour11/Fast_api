@@ -22,5 +22,7 @@ class User(Base):
     access_token = Column(String(300), default=None)
     refresh_token = Column(String(300), default=None)
     confirmed = Column(Boolean(), default=False)
+    avatar = Column(String(255), nullable=True)
+
     def __str__(self):
         return self.email

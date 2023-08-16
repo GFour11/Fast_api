@@ -1,10 +1,10 @@
 from fastapi import status, HTTPException
 from datetime import date, timedelta
-from sqlalchemy import or_, and_
+from sqlalchemy import or_
 from src.database.models import Contact, User
 from sqlalchemy.orm import Session
 
-from src.repositories.auth import Hash
+from src.repositories.auth import Hash, get_user_by_email
 
 hash_handler = Hash()
 async def get_all_contacts(user: User,db: Session):
@@ -70,7 +70,14 @@ async def signup(body, db: Session):
     db.refresh(new_user)
     return new_user
 
-async def confirmed_email(user: User,db: Session):
-    user = db.query(Contact).filter_by(user=user.id).first()
+async def confirmed_email( email, db: Session):
+    user = db.query(User).filter_by(email=email).first()
     user.confirmed = True
     db.commit()
+
+
+async def update_avatar(email, url: str, db: Session) -> User:
+    user = await get_user_by_email(email, db)
+    user.avatar = url
+    db.commit()
+    return user
