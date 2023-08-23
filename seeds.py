@@ -5,7 +5,8 @@ from src.database.models import Contact
 fake = Faker('uk-UA')
 
 def fill_db():
-    info = 'Some info'
+    """Fill database with fake contacts for test"""
+
     flag = True
     session = SESSION()
     for db_new_object in range(5):

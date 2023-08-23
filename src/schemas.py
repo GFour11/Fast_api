@@ -20,7 +20,7 @@ class ContactResponse(ContactModel):
         from_attributes = True
 
 class UserModel(BaseModel):
-    email : str
+    email: str
     password: str
 
 class TokenModel(BaseModel):

@@ -1,9 +1,8 @@
 import cloudinary
 import cloudinary.uploader
 from fastapi import APIRouter, Depends,  HTTPException, status, BackgroundTasks, Request, UploadFile, File
-from fastapi.security import  HTTPBearer, OAuth2PasswordRequestForm
+from fastapi.security import HTTPBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 
 
@@ -25,6 +24,17 @@ security = HTTPBearer()
 
 @router.get('/get_contatact', response_model=ContactResponse)
 async def get_contact(name, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Find one contact for current user with parameter NAME.
+
+    :param name: contact name.
+    :type name: str
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: Contact with new data.
+    :rtype: Contact object
+    """
     result = await get_one_contact(name, current_user, db)
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
@@ -33,12 +43,33 @@ async def get_contact(name, current_user: User = Depends(auth.get_current_user),
 
 @router.get('/get_all_contatact', dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def get_all_contact(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Get all contacts for current user from db
+
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: List[Contacts objects]
+    """
     result = await src.get_all_contacts(current_user,db)
     return result
 
 
 @router.put('/update_contatact', status_code=status.HTTP_201_CREATED,  dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def update_contact(name, body : ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Update existing contact with new information.
+
+    :param name: contact name.
+    :type name: str
+    :param body: contact name, surname, birthday, data.
+    :type body: JSON
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: Contact with new data.
+    :rtype: Contact object
+    """
     result = await src.update_contact(name, body, current_user, db)
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
@@ -46,33 +77,91 @@ async def update_contact(name, body : ContactResponse, current_user: User = Depe
 
 @router.delete('/delete_contact')
 async def delete_contact(name,current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Create a new contact.
+
+    :param name: contact name.
+    :type name: str
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: (str) message 'Delited'.
+    """
     result = await del_contact(name, current_user, db)
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
     return 'Delited'
 
 @router.post('/new_contatact', response_model=ContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=2, seconds=60))])
-async def create_contact(body : ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+async def create_contact(body: ContactResponse, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Create a new contact.
+
+    :param body: contact name, surname, birthday, data.
+    :type body: JSON
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: new contact.
+    """
     result = await src.create_contact(body,current_user, db)
     return result
 
 
 @utils.get('/upcoming_birthday')
 async def upcoming_birthday(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Find contacts, who have a birthday on this week.
+
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: List[Contacts objects]
+    """
     result = await src.upcoming_birthday(current_user, db)
     return result
 @utils.get('/search')
 async def search(param, current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """
+    Find any contact with specific parameter.
+
+    :param param: str. Word for find info.
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: List[User objects]
+    """
     result = await src.search(param, current_user, db)
     return result
 
 @utils.post('/signup', status_code=status.HTTP_201_CREATED)
 async def signup(body : UserModel ,background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
+    """
+    Sign up.
+
+    :param body: user email, password.
+    :type body: json
+    :param background_tasks: fastapi BackgroundTasks.
+    :type background_tasks: function
+    :param request: fastapi Request.
+    :type request: Request object
+    :param db: The database session.
+    :type db: Session
+    :return: str
+    """
     await src.signup(body, db)
     background_tasks.add_task(send_email, body.email, request.base_url)
     return 'Check your email'
 @utils.post("/login", response_model=TokenModel)
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """User login function.
+    :param body: user data depends on fastapi security OAuth2PasswordRequestForm.
+    :type body:OAuth2PasswordRequestForm object
+    :param db: The database session.
+    :type db: Session
+    :return: access token, refresh token.
+    """
     user = await get_user_by_email(body.username, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email")
@@ -89,6 +178,15 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
 
 @utils.get('/confirmed_email/{token}')
 async def _confirmed_email(token: str, db: Session = Depends(get_db)):
+    """
+    Confirm email for current user.
+
+    :param token: user token.
+    :type token: str
+    :param db: The database session.
+    :type db: Session
+    :return: str
+    """
     email = await auth.get_email_from_token(token)
     user = await auth.get_user_by_email(email, db)
     if user is None:
@@ -101,6 +199,19 @@ async def _confirmed_email(token: str, db: Session = Depends(get_db)):
 @utils.post('/request_email')
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: Session = Depends(get_db)):
+    """
+    Send email to user, to confirmed his registration.
+
+    :param body: user email.
+    :type body: str
+    :param background_tasks: fastapi BackgroundTasks.
+    :type background_tasks: function
+    :param request: fastapi Request.
+    :type request: Request object
+    :param db: The database session.
+    :type db: Session
+    :return: str
+    """
     user = await auth.get_user_by_email(body.email, db)
 
     if user.confirmed:
@@ -112,6 +223,17 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
 @users.patch('/avatar', response_model=UserDb)
 async def update_avatar_user(file: UploadFile = File(), current_user: User = Depends(auth.get_current_user),
                              db: Session = Depends(get_db)):
+    """
+    Update user avatar.
+
+    :param file: new avatar file. Depends on fastapi UploadFile.
+    :type file: file path
+    :param current_user: user object.
+    :type current_user:  class User object
+    :param db: The database session.
+    :type db: Session
+    :return: User object
+    """
     cloudinary.config(
         cloud_name="dsjusqa4p",
         api_key="599877185773136",
@@ -127,4 +249,10 @@ async def update_avatar_user(file: UploadFile = File(), current_user: User = Dep
 
 @users.get("/me/", response_model=UserDb)
 async def read_users_me(current_user: User = Depends(auth.get_current_user)):
+    ''' User profile.
+
+    :param current_user: user object.
+    :type current_user:  class User object
+    :return: User object
+    '''
     return current_user

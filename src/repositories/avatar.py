@@ -1,4 +1,5 @@
 import cloudinary
+from pydantic_settings import BaseSettings
 
 cloudinary.config(
     cloud_name="dsjusqa4p",
@@ -7,10 +8,11 @@ cloudinary.config(
 )
 
 
-from pydantic import BaseSettings
+
 
 
 class Settings(BaseSettings):
+    """pydantic settings class"""
     sqlalchemy_database_url: str
     secret_key: str
     algorithm: str

@@ -19,6 +19,7 @@ engine = create_engine(DB)
 SESSION = sessionmaker(autocommit = False, autoflush= False, bind= engine)
 
 def get_db():
+    """Connection to database"""
     db = SESSION()
     try:
         yield db

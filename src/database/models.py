@@ -5,6 +5,9 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 class Contact(Base):
+
+    """Contact object model"""
+
     __tablename__ = 'Contacts'
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable= False)
@@ -15,6 +18,9 @@ class Contact(Base):
     user = Column(ForeignKey("Users.id", ondelete="CASCADE"), nullable=True, default=None)
 
 class User(Base):
+
+    """User object model"""
+
     __tablename__ = 'Users'
     id = Column(Integer, primary_key=True)
     email = Column(String(50), nullable= False, unique= True)
