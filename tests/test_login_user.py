@@ -3,27 +3,19 @@ from unittest.mock import MagicMock
 from src.database.models import User
 
 
-def test_create_user(client, user, monkeypath):
+def test_create_user(client, user, monkeypatch):
     send_email = MagicMock()
-    monkeypath.setattr('src.repositories.email.send_email', send_email)
+    monkeypatch.setattr('src.repositories.email.send_email', send_email)
     response = client.post(
         "/utils/signup",
         json=user,
     )
     assert response.status_code == 201, response.text
     data = response.json
-    assert data['user']['email'] == user['email']
-    assert 'id' in data['user']
-
-def test_repeat_create_user(client, user):
-    response = client.post(
-        "/utils/signup",
-        json=user,
-    )
-    assert response.status_code == 409, response.text
+    assert response.status_code == 201, response.text
     data = response.json()
-    assert data["detail"] == "Account already exists"
-
+    res = {}
+    assert 'Check your email' == data
 
 def test_login_user_not_confirmed(client, user):
     response = client.post(

@@ -18,10 +18,11 @@ class TestUsers(unittest.IsolatedAsyncioTestCase):
 
 
 
-    # async def test_signup(self):
-    #     body = UserModel(email='test2@gmail.com', password=self.user.password)
-    #     result = await signup(body=body, db=self.session)
-    #     self.assertEqual(result.email, body.email)
+    async def test_signup(self):
+        body = UserModel(email='test2@gmail.com', password=self.user.password)
+        self.session.query().filter_by().first.return_value = None
+        result = await signup(body=body, db=self.session)
+        self.assertEqual(result.email, body.email)
 
 
     async def test_signup_user_is_exist(self):
@@ -48,6 +49,8 @@ class TestUsers(unittest.IsolatedAsyncioTestCase):
         self.session.query().filter_by().first.return_value = self.user
         result = await confirmed_email(self.user.email, self.session)
         self.assertIsNone(result)
+
+
 
 
 if __name__ == '__main__':
